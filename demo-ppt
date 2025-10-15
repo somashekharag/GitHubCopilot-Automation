@@ -1,0 +1,241 @@
+Slide 1 - Agenda
+
+
+1. Introduction to ITAF Framework
+2. Challenges in Script Development
+3. GitHub Copilot Overview
+4. Copilot + ITAF Integration
+5. Demo: Generating API Scripts Automatically
+6. Benefits and ROI
+7. Next Steps
+
+
+Slide 2 - About ITAF Framework
+
+
+• Modular, scalable, reusable automation framework
+• Built using Java, Selenium, Cucumber, Spring Boot & Rest-Assured
+• Supports both UI and API automation
+• Focused on reducing maintenance and accelerating automation delivery
+
+Slide 3 - Current Challenges
+
+
+• Manual script creation is time-consuming
+• Repeated boilerplate code across test scenarios
+• Limited reuse of pre-defined ITAF steps
+• Onboarding new testers requires framework understanding
+
+Slide 4 - GitHub Copilot – Overview
+
+
+• AI-powered code assistant from GitHub
+• Trained on billions of lines of code
+• Understands context and suggests entire functions or files
+• Integrates seamlessly with VS Code, IntelliJ, etc.
+
+
+Slide  - Copilot + ITAF Integration
+
+• Copilot guided by ITAF-specific prompts/instructions
+• Automatically generates API test scripts compatible with ITAF standards
+• Uses ITAF utilities like ITAFApiUtil, AuthUtil, and APIScenarioContext
+• Reduces manual errors and increases productivity
+
+Slide - Example Prompt → Output (1/2)
+
+
+**Prompt:**
+Generate API test scenario for POST /loan with payload and headers
+
+**Copilot Output:**
+Scenario: Verify create loan API
+Given api request with base url "https://xyz.com"
+And with headers | content-type | application/json |
+And with query parameters | groupId | 123 |
+And with request payload "payloads/xyz.json"
+And update payload with following values | $.loanAmount | 500 |
+When user sends "POST" request to "/createLoan"
+Then verify response code is 200
+
+Slide - Example Prompt → Output (2/2)
+
+
+**Prompt:**
+Extract loanAmount from response, store as oldLoanAmount, and send GET /verifyLoan
+
+**Copilot Output:**
+And store response value of jsonPath "$.loanAmount" with key "oldLoanAmount"
+When user sends "GET" request to "/verifyLoan" with query parameter loanAmount=${oldLoanAmount}
+Then verify response code is 200
+
+Slide- Benefits of Copilot + ITAF
+
+
+• Faster automation script development (up to 40–60%)
+• Consistent code quality aligned with ITAF standards
+• Reuse of existing framework utilities
+• Accelerated onboarding for new automation engineers
+• Reduced dependency on framework experts
+
+Slide - Next Steps
+
+1. Approve GitHub Copilot Enterprise license for automation team
+2. Configure Copilot with ITAF-specific custom instructions
+3. Pilot phase: auto-generation of API scripts
+4. Scale across teams post evaluation
+5. Continuous improvement and prompt tuning
+
+--------------------------------------------------------------------------------------------------------------------------------------
+
+Demo Objective
+
+To demonstrate how GitHub Copilot, when fine-tuned with ITAF framework standards, can automatically generate high-quality, consistent automation scripts — thereby improving speed, consistency, and collaboration in test automation across teams.
+
+Demo Agenda (Total 25–30 min)
+Time	Topic	Purpose
+0 – 3 min	Introduction	What ITAF is and why script standardization matters
+3 – 6 min	Problem Statement	Current pain points (manual effort, inconsistency, slower onboarding)
+6 – 10 min	Copilot Overview	Quick intro to Copilot and how it integrates with VS Code / IntelliJ
+10 – 22 min	Live Demo	Show Copilot generating ITAF-standard API and UI scripts from prompts
+22 – 25 min	Benefits & ROI	Show measurable productivity and quality improvements
+25 – 30 min	Q&A / Next Steps	Discuss pilot license and rollout plan
+
+3️⃣ Key Talking Points
+
+Current Challenge
+
+Script creation is manual and repetitive.
+
+Each team has its own style → inconsistent scripts.
+
+Onboarding new testers takes time due to ITAF learning curve.
+
+Solution
+
+GitHub Copilot trained with ITAF standards acts as a virtual pair programmer.
+
+Copilot understands ITAF step patterns, utilities, and best practices.
+
+Testers describe test requirements in plain English or JSON — Copilot converts them into ready-to-run Cucumber scenarios and step definitions.
+
+Vision
+
+ITAF + Copilot = AI-assisted test automation platform.
+
+Empower every tester to generate consistent, production-ready scripts faster.
+
+
+Live Demo Flow
+Step 1: Setup context for Copilot
+
+Explain that Copilot has been given custom ITAF instructions, so it knows:
+
+Standard ITAF step patterns
+
+Utility classes like ITAFApiUtil, AuthUtil, ApiScenarioContext
+
+Expected scenario structure
+
+Show this briefly in the Copilot “Custom Instructions” panel.
+
+
+
+Step 2: Generate scenario from plain text
+
+🗣 Prompt in Copilot:
+
+“Create a Cucumber scenario for POST /request/createLoan with payload updates and validations as per ITAF standards.”
+
+✅ Copilot Output:
+A full ITAF-compliant Gherkin scenario:
+
+Scenario: Verify declined loan request
+  Given api request with base url "https://xyz.com"
+  And with headers
+    |content-type|application/json|
+    |channel|application|
+  And with request payload "payloads/xyz.json"
+  And update payload with following values
+    |jsonPath|value|
+    |$.loanAmount|500|
+    |$.purchaseAmount|400|
+  When user sends "POST" request to "/request/createLoan"
+  Then verify response code is 200
+  And response should contain following json paths and values
+    |jsonPath|expectedValue|
+    |$.message|declined|
+    |$.loanAmount|500|
+
+
+Explain: “Instead of spending 15–20 minutes writing this manually, Copilot generates it in seconds — fully aligned with ITAF syntax.”
+
+
+Step 3: Generate Java step definition
+
+Prompt Copilot to create the missing step:
+
+“Implement step definition for ‘And store response value of jsonPath "$.loanAmount" with key "oldLoanAmount"’”
+
+✅ Copilot auto-writes:
+
+@And("store response value of jsonPath {string} with key {string}")
+public void storeResponseValue(String jsonPath, String key) {
+    Object value = JsonPath.read(response.getBody().asString(), jsonPath);
+    ApiScenarioContext.set(key, value);
+}
+
+
+Highlight:
+
+Standards followed
+
+Consistent naming conventions
+
+Ready to plug-in and run
+
+
+Step 4: Generate scenario from JSON or Postman collection
+
+🗣 Prompt:
+
+“Generate Cucumber scenario using the following Postman metadata”
+(Paste ITAF_EXTENSIONS JSON)
+
+✅ Copilot parses it and outputs a full ITAF scenario automatically.
+
+Explain:
+
+Copilot can read structured input (JSON or Postman collection)
+
+Enables CI/CD integration where Postman exports become ready test scripts
+
+Step 5: Run in ITAF
+
+Show the generated scenario running successfully inside your ITAF runner (optional if time allows).
+
+📈 5️⃣ Key Benefits to Highlight
+Area	Before Copilot	With Copilot	Benefit
+Script Creation	Manual (20–30 min per test)	Auto-generated (2–3 min)	~90% time saved
+Consistency	Varies by tester	Standardized ITAF pattern	Zero deviation
+Onboarding	2–3 weeks for new joiners	2–3 days	Faster ramp-up
+Maintenance	Prone to errors	AI-assisted corrections	Reduced rework
+Coverage	Limited by manual capacity	Broader, faster coverage	Higher productivity
+
+Talking Points for Management
+
+ROI: Within 2–3 months, Copilot can save hundreds of tester-hours weekly.
+
+Quality: AI ensures strict adherence to ITAF standards — no custom or ad-hoc scripting.
+
+Scalability: Copilot helps even new team members produce enterprise-grade scripts quickly.
+
+Future vision: Extend same approach to UI testing, data-driven tests, and MFE automation.
+
+Demo Close and Ask
+
+“With ITAF and GitHub Copilot together, we’re not just automating tests — we’re automating the creation of automation itself.
+This means faster delivery, consistent quality, and scalable productivity across all teams.
+With Copilot licenses, we can immediately accelerate our automation roadmap and demonstrate measurable ROI within the first sprint.”
+
+
