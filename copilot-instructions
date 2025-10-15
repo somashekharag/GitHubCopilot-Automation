@@ -1,0 +1,240 @@
+🧩 1️⃣ Postman Integration Guideline (ITAF Metadata Standard)
+🧭 Purpose
+
+This document defines how to include ITAF-specific metadata inside Postman requests so that exported Postman collections can be directly used by GitHub Copilot or an internal ITAF script generator to produce standardized Cucumber scenarios and step definitions.
+
+🧱 ITAF Postman Metadata Model
+
+Each Postman request may include a JSON block named ITAF_EXTENSIONS which describes:
+
+Payload updates
+
+Expected response validations
+
+Scenario context storage
+
+Chained requests
+
+Authentication or setup metadata
+
+This JSON block can appear in two possible places within the Postman request:
+
+Field	Appears in Export?	Recommended Usage
+Request → Description	✅ Yes	Human-readable + structured metadata
+Event → Test Script	✅ Yes	Automation-friendly metadata (parsed easily)
+✍️ Example: ITAF Metadata (Request Description)
+{
+  "ITAF_EXTENSIONS": {
+    "payloadUpdates": {
+      "$.loanAmount": 500,
+      "$.purchaseAmount": 400
+    },
+    "expectedResponse": {
+      "statusCode": 200,
+      "validations": {
+        "$.message": "declined",
+        "$.loanAmount": "500"
+      }
+    },
+    "storeContext": {
+      "$.loanAmount": "oldLoanAmount"
+    },
+    "nextRequest": {
+      "endpoint": "/verifyloan",
+      "method": "GET",
+      "queryParams": {
+        "loanAmount": "${oldLoanAmount}"
+      },
+      "expectedStatus": 200
+    }
+  }
+}
+
+
+When exported, this appears in the collection JSON as:
+
+"description": "{\n  \"ITAF_EXTENSIONS\": { ... }\n}"
+
+🧩 Example: ITAF Metadata in “Tests” Tab
+
+Inside Tests tab of the request:
+
+// ITAF_EXTENSIONS
+{
+  "payloadUpdates": {
+    "$.loanAmount": 500
+  },
+  "expectedResponse": {
+    "statusCode": 200,
+    "validations": {
+      "$.message": "declined"
+    }
+  }
+}
+
+
+When exported, this becomes part of the event section:
+
+"event": [
+  {
+    "listen": "test",
+    "script": {
+      "exec": [
+        "// ITAF_EXTENSIONS",
+        "{",
+        "  \"payloadUpdates\": {\"$.loanAmount\": 500},",
+        "  \"expectedResponse\": {\"statusCode\": 200, \"validations\": {\"$.message\": \"declined\"}}",
+        "}"
+      ]
+    }
+  }
+]
+
+💡 Metadata Keys and Meanings
+Key	Type	Description
+payloadUpdates	JSON Object	JSONPath/value pairs to update payload before sending
+expectedResponse	JSON Object	Defines statusCode and key-value validations using JSONPath
+storeContext	JSON Object	JSONPath/key pairs to extract values from response and store in scenario context
+nextRequest	JSON Object	Defines next endpoint, method, and parameters to chain requests
+auth	JSON Object	Optional block defining token URL, client ID/secret for dynamic auth
+notes	String	Free-form human comment, appears in feature file as scenario description
+🧠 Parsing Strategy for Copilot or ITAF Generator
+
+When Copilot (or a parser) reads an exported collection:
+
+Look for "description" fields containing "ITAF_EXTENSIONS".
+
+Or, scan "event" objects for // ITAF_EXTENSIONS blocks.
+
+Parse and interpret these as metadata for scenario generation.
+
+⚙️ 2️⃣ GitHub Copilot Instruction Set for ITAF Framework
+
+🧩 Paste this entire block into Copilot “Custom Instructions” or prompt context for consistent generation.
+
+🧠 Context for GitHub Copilot
+
+You are assisting an automation tester who uses the ITAF (Integrated Test Automation Framework) for API automation.
+ITAF uses:
+
+Java, Rest Assured, Cucumber, Spring Boot, Selenium
+
+Utilities: ITAFApiUtil, AuthUtil, DynamicValueResolver, ApiScenarioContext, ApiConfigReader, and ITAFApiSteps.
+
+🎯 Your Goal
+
+Generate complete Cucumber scenarios and step definitions that fully comply with ITAF standards, based on one of the following inputs:
+
+Plain text instruction
+(e.g., “Base URL is https://xyz.com
+, POST /request/createLoan, update loanAmount=500…”)
+
+JSON template input
+(structured ITAF scenario JSON describing payload updates, headers, query params, etc.)
+
+Exported Postman collection JSON
+(with custom metadata blocks under "ITAF_EXTENSIONS" in request description or events)
+
+🧩 ITAF Scenario Generation Rules
+
+Use Given, When, Then steps exactly as per ITAF predefined patterns:
+
+Given api request with base url "<url>"
+
+And with headers + DataTable
+
+And with query parameters + DataTable
+
+And with path parameters + DataTable
+
+And with request payload "<path>"
+
+And update payload with following values + DataTable
+
+When user sends "<METHOD>" request to "<endpoint>"
+
+Then verify response code is <code>
+
+Then response should contain following json paths and values + DataTable
+
+And store response value of jsonPath "<path>" with key "<key>"
+
+If the scenario includes payload updates, convert them into:
+
+And update payload with following values
+  |jsonPath|value|
+  |$.loanAmount|500|
+
+
+If the scenario includes response validations, use:
+
+Then response should contain following json paths and values
+  |jsonPath|expectedValue|
+  |$.message|declined|
+
+
+If the request includes context storage or chaining, add:
+
+And store response value of jsonPath "$.loanAmount" with key "oldLoanAmount"
+When user sends "GET" request to "/verifyloan"
+And with query parameters
+  |loanAmount|${oldLoanAmount}|
+
+
+Always maintain Scenario names using descriptive titles derived from metadata:
+
+Scenario: Create Loan and Verify Declined Response
+
+
+For JSON inputs, generate human-readable steps directly.
+
+For Postman inputs, parse ITAF_EXTENSIONS and translate their content into ITAF steps.
+
+🧱 Supporting ITAF Utility Classes
+
+When no predefined step definition exists, Copilot must use these standard utility classes:
+
+ApiScenarioContext — for runtime data sharing between steps.
+
+AuthUtil.getBearerToken() — for authentication.
+
+ITAFApiUtil.sendRequest() — for executing API calls.
+
+DynamicValueResolver — to resolve ${variable} placeholders.
+
+ApiConfigReader — for property and configuration management.
+
+📘 Expected Output
+
+Copilot must generate:
+
+✅ Cucumber Feature file (Scenario + Gherkin steps)
+
+✅ Step Definition file (if missing) using ITAF naming and logic conventions
+
+✅ Optional helper JSON file (if user requests generation based on JSON template)
+
+🧩 Example Usage
+▶️ Input (Plain Text)
+
+Base URL is https://xyz.com
+. Payload: payloads/xyz.json.
+Headers: content-type=application/json, channel=application.
+Update payload $.loanAmount=500, $.purchaseAmount=400.
+Send POST /request/createLoan.
+Expect 200.
+Validate $.message=declined and $.loanAmount=500.
+Extract $.loanAmount as oldLoanAmount.
+Call GET /verifyloan?loanAmount=${oldLoanAmount} and expect 200.
+
+▶️ Copilot Output
+
+Produces a fully formed Cucumber scenario identical to ITAF standards with proper step structure and optional Java step definitions.
+
+🧭 Summary for Teams
+Input Type	Accepted by Copilot	Source
+Plain Text	✅	Manual prompt
+JSON Template	✅	ITAF Scenario JSON
+Postman Collection	✅	Exported .json with ITAF_EXTENSIONS
+
+Would you like me to generate a sample JSON template + sample Postman collection (with ITAF_EXTENSIONS) that you can share with your team as examples for Copilot ingestion and training?
